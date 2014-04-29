@@ -2019,8 +2019,8 @@ void ScoreView::wheelEvent(QWheelEvent* event)
             nReal = ((qreal)dx) / PIXELSSTEPSFACTOR;
             }
       else if (!stepsScrolled.isNULL()) {
-            dx = stepsScrolled.x() / 120;
-            dy = stepsScrolled.y() / 120;
+            dx = stepsScrolled.x() * qMax(2, width() / 10) / 120;
+            dy = stepsScrolled.y() * qMax(2, height() / 10) / 120;
             nReal = ((qreal)stepsScrolled.x()) / 120;
             }
 
@@ -2042,17 +2042,12 @@ void ScoreView::wheelEvent(QWheelEvent* event)
             return;
             }
 
-      if (event->modifiers() & Qt::ShiftModifier) {
+      if (event->modifiers() & Qt::ShiftModifier && dx == 0) {
             //
             //    scroll horizontal
             //
-            dx = n * qMax(2, width() / 10);
-            }
-      else {
-            //
-            //    scroll vertical
-            //
-            dy = n * qMax(2, height() / 10);
+            dx = dy;
+            dy = 0;
             }
 
       if (dx == 0 && dy == 0)
