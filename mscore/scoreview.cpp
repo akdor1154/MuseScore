@@ -1999,11 +1999,32 @@ bool ScoreView::gestureEvent(QGestureEvent *event)
 //---------------------------------------------------------
 
 void ScoreView::wheelEvent(QWheelEvent* event)
-      {
-      static int deltaSum = 0;
-      deltaSum += event->delta();
-      int n = deltaSum / 120;
-      deltaSum %= 120;
+       {
+       /*static int deltaSum = 0;
+        deltaSum += event->delta();
+       int n = deltaSum / 120;
+       deltaSum %= 120;*/
+
+      #define PIXELSSTEPSFACTOR 5
+
+      QPoint pixelsScrolled = event->pixelDelta();
+      QPoint stepsScrolled = event->pixelDelta();
+
+      int dx, dy, n = 0;
+      qreal nReal = 0.0;
+
+      if (!pixelsScrolled.isNull()) {
+            dx = pixelsScrolled.x();
+            dy = pixelsScrolled.y();
+            nReal = ((qreal)dx) / PIXELSSTEPSFACTOR;
+            }
+      else if (!stepsScrolled.isNULL()) {
+            dx = stepsScrolled.x() / 120;
+            dy = stepsScrolled.y() / 120;
+            nReal = ((qreal)stepsScrolled.x()) / 120;
+            }
+
+      n = (int) nReal;
 
       if (event->buttons() & Qt::RightButton) {
             bool up = n > 0;
@@ -2017,12 +2038,11 @@ void ScoreView::wheelEvent(QWheelEvent* event)
             }
       if (event->modifiers() & Qt::ControlModifier) {
             QApplication::sendPostedEvents(this, 0);
-            zoom(n, event->pos());
+            zoom(nReal, event->pos());
             return;
             }
-      int dx = 0;
-      int dy = 0;
-      if (event->modifiers() & Qt::ShiftModifier || event->orientation() == Qt::Horizontal) {
+
+      if (event->modifiers() & Qt::ShiftModifier) {
             //
             //    scroll horizontal
             //
