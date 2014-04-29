@@ -142,7 +142,7 @@ class MagTransition1 : public QEventTransition
             QMouseEvent* me = static_cast<QMouseEvent*>(we->event());
             bool b1 = me->button() == Qt::LeftButton;
             ScoreView* c = static_cast<ScoreView*>(eventSource());
-            c->zoom(b1 ? 2 : -1, me->pos());
+            c->zoomStep(b1 ? 2 : -1, me->pos());
             }
    public:
       MagTransition1(QObject* obj, QState* target)
@@ -165,7 +165,7 @@ class MagTransition2 : public QEventTransition
             QMouseEvent* me = static_cast<QMouseEvent*>(static_cast<QStateMachine::WrappedEvent*>(e)->event());
             bool b1 = me->button() == Qt::LeftButton;
             ScoreView* c = static_cast<ScoreView*>(eventSource());
-            c->zoom(b1 ? 2 : -1, me->pos());
+            c->zoomStep(b1 ? 2 : -1, me->pos());
             }
    public:
       MagTransition2(QObject* obj)
@@ -1916,29 +1916,21 @@ void ScoreView::paint(const QRect& r, QPainter& p)
       }
 
 //---------------------------------------------------------
-//   zoom
+//   zoom in or out by a step
 //---------------------------------------------------------
 
-void ScoreView::zoom(int step, const QPoint& pos)
+void ScoreView::zoomStep(qreal step, const QPoint& pos)
       {
       qreal _mag = mag();
 
-      if (step > 0) {
-            for (int i = 0; i < step; ++i) {
-                   _mag *= 1.1;
-                  }
-            }
-      else {
-            for (int i = 0; i < -step; ++i) {
-                  _mag /= 1.1;
-                  }
-            }
+      _mag *= qPow(1.1,step);
 
       zoom(_mag, QPointF(pos));
       }
 
+
 //---------------------------------------------------------
-//   zoom
+//   zoom to an absolute zoom level
 //---------------------------------------------------------
 
 void ScoreView::zoom(qreal _mag, const QPointF& pos)
@@ -2000,17 +1992,13 @@ bool ScoreView::gestureEvent(QGestureEvent *event)
 
 void ScoreView::wheelEvent(QWheelEvent* event)
        {
-       /*static int deltaSum = 0;
-        deltaSum += event->delta();
-       int n = deltaSum / 120;
-       deltaSum %= 120;*/
 
       #define PIXELSSTEPSFACTOR 5
 
       QPoint pixelsScrolled = event->pixelDelta();
-      QPoint stepsScrolled = event->pixelDelta();
+      QPoint stepsScrolled = event->angleDelta();
 
-      int dx, dy, n = 0;
+      int dx = 0, dy = 0, n = 0;
       qreal nReal = 0.0;
 
       if (!pixelsScrolled.isNull()) {
@@ -2018,14 +2006,15 @@ void ScoreView::wheelEvent(QWheelEvent* event)
             dy = pixelsScrolled.y();
             nReal = ((qreal)dx) / PIXELSSTEPSFACTOR;
             }
-      else if (!stepsScrolled.isNULL()) {
+      else if (!stepsScrolled.isNull()) {
             dx = stepsScrolled.x() * qMax(2, width() / 10) / 120;
             dy = stepsScrolled.y() * qMax(2, height() / 10) / 120;
-            nReal = ((qreal)stepsScrolled.x()) / 120;
+            nReal = ((qreal)stepsScrolled.y()) / 120;
             }
 
       n = (int) nReal;
 
+      //this functionality seems currently blocked by the context menu
       if (event->buttons() & Qt::RightButton) {
             bool up = n > 0;
             if (!up)
@@ -2036,16 +2025,15 @@ void ScoreView::wheelEvent(QWheelEvent* event)
             score()->endCmd();
             return;
             }
+
       if (event->modifiers() & Qt::ControlModifier) {
             QApplication::sendPostedEvents(this, 0);
-            zoom(nReal, event->pos());
+            zoomStep(nReal, event->pos());
             return;
             }
 
+      //make shift+scroll go horizontally
       if (event->modifiers() & Qt::ShiftModifier && dx == 0) {
-            //
-            //    scroll horizontal
-            //
             dx = dy;
             dy = 0;
             }
