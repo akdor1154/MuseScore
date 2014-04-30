@@ -45,6 +45,12 @@ private slots:
       void gp5Volta() { gpReadTest("volta", "gp5"); }
       void gp4Volta() { gpReadTest("volta", "gp4"); }
       void gp3Volta() { gpReadTest("volta", "gp3"); }
+      void gp5copyright() { gpReadTest("copyright", "gp5"); }
+      void gp4copyright() { gpReadTest("copyright", "gp4"); }
+      void gp3copyright() { gpReadTest("copyright", "gp3"); }
+      void gp5Tempo() { gpReadTest("tempo", "gp5"); }
+      void gp4Tempo() { gpReadTest("tempo", "gp4"); }
+      void gp3Tempo() { gpReadTest("tempo", "gp3"); }
       };
 
 //---------------------------------------------------------

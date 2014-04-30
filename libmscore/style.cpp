@@ -117,6 +117,7 @@ static const StyleTypes2 styleTypes2[] = {
       { ST_harmonyY,                    StyleType("harmonyY",                ST_SPATIUM) },
       { ST_harmonyFretDist,             StyleType("harmonyFretDist",         ST_SPATIUM) },
       { ST_minHarmonyDistance,          StyleType("minHarmonyDistance",      ST_SPATIUM) },
+      { ST_maxHarmonyBarDistance,       StyleType("maxHarmonyBarDistance",   ST_SPATIUM) },
       { ST_capoPosition,                StyleType("capoPosition",            ST_INT) },
       { ST_fretNumMag,                  StyleType("fretNumMag",              ST_DOUBLE) },
       { ST_fretNumPos,                  StyleType("fretNumPos",              ST_INT) },  // 0 = left, 1 = right
@@ -152,6 +153,7 @@ static const StyleTypes2 styleTypes2[] = {
       { ST_minMMRestWidth,              StyleType("minMMRestWidth",          ST_SPATIUM) },       // minimum width of multi measure rest
       { ST_hideEmptyStaves,             StyleType("hideEmptyStaves",         ST_BOOL) },
       { ST_dontHideStavesInFirstSystem, StyleType("dontHidStavesInFirstSystm", ST_BOOL) },
+      { ST_hideInstrumentNameIfOneInstrument,  StyleType("hideInstrumentNameIfOneInstrument", ST_BOOL) },
       { ST_gateTime,                    StyleType("gateTime",                ST_INT) },           // 0-100%
       { ST_tenutoGateTime,              StyleType("tenutoGateTime",          ST_INT) },
       { ST_staccatoGateTime,            StyleType("staccatoGateTime",        ST_INT) },
@@ -211,7 +213,7 @@ static const StyleTypes2 styleTypes2[] = {
       { ST_tupletStemLeftDistance,      StyleType("tupletStemLeftDistance",  ST_SPATIUM) },
       { ST_tupletStemRightDistance,     StyleType("tupletStemRightDistance", ST_SPATIUM) },
       { ST_tupletNoteLeftDistance,      StyleType("tupletNoteLeftDistance",  ST_SPATIUM) },
-      { ST_tupletNoteRightDistance,     StyleType("tupletNoteRightDistance", ST_SPATIUM) },
+      { ST_tupletNoteRightDistance,     StyleType("tupletNoteRightDistance", ST_SPATIUM) }
       };
 
 class StyleTypes {
@@ -412,6 +414,7 @@ StyleData::StyleData()
             { ST_harmonyY,                    QVariant(2.5) },
             { ST_harmonyFretDist,             QVariant(0.5) },
             { ST_minHarmonyDistance,          QVariant(0.5) },
+            { ST_maxHarmonyBarDistance,       QVariant(3.0) },
             { ST_capoPosition,                QVariant(0) },
             { ST_fretNumMag,                  QVariant(qreal(2.0)) },
             { ST_fretNumPos,                  QVariant(0) },
@@ -447,6 +450,7 @@ StyleData::StyleData()
             { ST_minMMRestWidth,              QVariant(4) },
             { ST_hideEmptyStaves,             QVariant(false) },
             { ST_dontHideStavesInFirstSystem, QVariant(true) },
+            { ST_hideInstrumentNameIfOneInstrument, QVariant(true) },
             { ST_gateTime,                    QVariant(100) },
             { ST_tenutoGateTime,              QVariant(100) },
             { ST_staccatoGateTime,            QVariant(50) },

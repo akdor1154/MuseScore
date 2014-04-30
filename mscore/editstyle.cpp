@@ -333,6 +333,7 @@ void EditStyle::getValues()
       lstyle.set(ST_minMMRestWidth,          Spatium(minMeasureWidth->value()));
       lstyle.set(ST_hideEmptyStaves,         hideEmptyStaves->isChecked());
       lstyle.set(ST_dontHideStavesInFirstSystem, dontHideStavesInFirstSystem->isChecked());
+      lstyle.set(ST_hideInstrumentNameIfOneInstrument, hideInstrumentNameIfOneInstrument->isChecked());
 
       lstyle.set(ST_accidentalNoteDistance,  Spatium(accidentalNoteDistance->value()));
       lstyle.set(ST_accidentalDistance,      Spatium(accidentalDistance->value()));
@@ -463,6 +464,7 @@ void EditStyle::getValues()
       lstyle.set(ST_harmonyY,                Spatium(harmonyY->value()));
       lstyle.set(ST_harmonyFretDist,         Spatium(harmonyFretDist->value()));
       lstyle.set(ST_minHarmonyDistance,      Spatium(minHarmonyDistance->value()));
+      lstyle.set(ST_maxHarmonyBarDistance,   Spatium(maxHarmonyBarDistance->value()));
 
       lstyle.set(ST_capoPosition,            capoPosition->value());
 
@@ -587,6 +589,7 @@ void EditStyle::setValues()
       hideEmptyStaves->setChecked(lstyle.value(ST_hideEmptyStaves).toBool());
       dontHideStavesInFirstSystem->setChecked(lstyle.value(ST_dontHideStavesInFirstSystem).toBool());
       dontHideStavesInFirstSystem->setEnabled(hideEmptyStaves->isChecked());
+      hideInstrumentNameIfOneInstrument->setChecked(lstyle.value(ST_hideInstrumentNameIfOneInstrument).toBool());
 
       accidentalNoteDistance->setValue(lstyle.value(ST_accidentalNoteDistance).toDouble());
       accidentalDistance->setValue(lstyle.value(ST_accidentalDistance).toDouble());
@@ -720,6 +723,7 @@ void EditStyle::setValues()
       harmonyY->setValue(lstyle.value(ST_harmonyY).toDouble());
       harmonyFretDist->setValue(lstyle.value(ST_harmonyFretDist).toDouble());
       minHarmonyDistance->setValue(lstyle.value(ST_minHarmonyDistance).toDouble());
+      maxHarmonyBarDistance->setValue(lstyle.value(ST_maxHarmonyBarDistance).toDouble());
       capoPosition->setValue(lstyle.value(ST_capoPosition).toInt());
       fretNumMag->setValue(lstyle.value(ST_fretNumMag).toDouble()*100.0);
       radioFretNumLeft->setChecked(lstyle.value(ST_fretNumPos).toInt() == 0);
