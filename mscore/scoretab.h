@@ -75,7 +75,9 @@ class ScoreTab : public QWidget {
       ScoreView* view() const { return view(currentIndex()); }
       bool contains(ScoreView*) const;
       void initScoreView(int idx, double mag, int magIdx, double xoffset, double yoffset);
-      };
+      void initSplitter(QSplitter *splitter, ScoreView *scoreView);
+      ScoreView *view(QSplitter *sp);
+};
 
 
 } // namespace Ms

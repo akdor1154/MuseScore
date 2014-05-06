@@ -70,6 +70,31 @@ ScoreTab::ScoreTab(QList<Score*>* sl, QWidget* parent)
       connect(tab2, SIGNAL(currentChanged(int)), this, SLOT(setExcerpt(int)));
       connect(tab, SIGNAL(tabCloseRequested(int)), this, SIGNAL(tabCloseRequested(int)));
       }
+//---
+//   view
+//---
+
+ScoreView* ScoreTab::view(QSplitter* sp)
+    {
+    if (sp) {
+        return static_cast<ScoreView*>(static_cast<QScrollArea*>(s->widget(0))->widget());
+        }
+    }
+
+//---
+//   initSplitter(QSplitter* splitter, ScoreView* scoreView)
+//
+
+void ScoreTab::initSplitter(QSplitter* splitter, Score* score) {
+    splitter = (splitter) ? (splitter) : new QSplitter;
+    QScrollArea* vScroll =  new QScrollArea;
+    scoreView  = new ScoreView;
+    scoreView->setScore(score);
+    splitter->addWidget(vScroll);
+    vScroll->setWidget(scoreView);
+    stack->addWidget(splitter);
+}
+
 
 //---------------------------------------------------------
 //   view
@@ -79,7 +104,7 @@ ScoreView* ScoreTab::view(int n) const
       {
       QSplitter* s = viewSplitter(n);
       if (s)
-            return static_cast<ScoreView*>(s->widget(0));
+            return view(s);
       return 0;
       }
 
@@ -106,7 +131,7 @@ QSplitter* ScoreTab::viewSplitter(int n) const
             QSplitter* sp = static_cast<QSplitter*>(stack->widget(i));
             if (sp->count() == 0)
                   return 0;
-            ScoreView* v = static_cast<ScoreView*>(sp->widget(0));
+            ScoreView* v = view(sp);
             if (v->score() == score)
                   return sp;
             }
@@ -144,17 +169,14 @@ void ScoreTab::setCurrent(int n)
 
       ScoreView* v;
       if (!vs) {
-            vs = new QSplitter;
-            v  = new ScoreView;
+            initSplitter(vs, scoreList->value(n));
+            v = view(vs);
             tab2->blockSignals(true);
             tab2->setCurrentIndex(0);
             tab2->blockSignals(false);
-            vs->addWidget(v);
-            v->setScore(scoreList->value(n));
-            stack->addWidget(vs);
             }
       else {
-            v = static_cast<ScoreView*>(vs->widget(0));
+          v = view(vs);
             }
 #ifdef OMR
       if (v) {
@@ -231,7 +253,7 @@ void ScoreTab::updateExcerpts()
       int n = stack->count() - 1;
       for (int i = n; i >= 0; --i) {
             QSplitter* vs = static_cast<QSplitter*>(stack->widget(i));
-            ScoreView* sview = static_cast<ScoreView*>(vs->widget(0));
+            ScoreView* sview = view(vs);
 
             if (sview->score() != score && sview->score()->rootScore() == score) {
                   stack->takeAt(i);
@@ -279,14 +301,11 @@ void ScoreTab::setExcerpt(int n)
                   }
             }
       if (!vs) {
-            vs = new QSplitter;
-            v = new ScoreView;
-            vs->addWidget(v);
-            v->setScore(score);
-            stack->addWidget(vs);
-            }
+            initSplitter(vs, score);
+            v = view(vs);
+      }
       else
-            v = static_cast<ScoreView*>(vs->widget(0));
+            v = view(vs);
       stack->setCurrentWidget(vs);
       emit currentScoreViewChanged(v);
       }
@@ -350,10 +369,12 @@ void ScoreTab::removeTab(int idx)
 
       for (int i = 0; i < stack->count(); ++i) {
             QSplitter* vs = static_cast<QSplitter*>(stack->widget(i));
-            ScoreView* v = static_cast<ScoreView*>(vs->widget(0));
+            QScrollArea* vScroll =  static_cast<QScrollArea*>(vs->widget(0));
+            ScoreView* v = static_cast<ScoreView*>(vScroll->widget());
             if (v->score() == score) {
                   stack->takeAt(i);
                   delete v;
+                  delete vScroll;
                   break;
                   }
             }
@@ -361,10 +382,12 @@ void ScoreTab::removeTab(int idx)
             Score* sc = excerpt->score();
             for (int i = 0; i < stack->count(); ++i) {
                   QSplitter* vs = static_cast<QSplitter*>(stack->widget(i));
+                  QScrollArea* vScroll =  static_cast<QScrollArea*>(vs->widget(0));
                   ScoreView* v = static_cast<ScoreView*>(vs->widget(0));
                   if (v->score() == sc) {
                         stack->takeAt(i);
                         delete v;
+                        delete vScroll;
                         break;
                         }
                   }
@@ -395,7 +418,9 @@ void ScoreTab::initScoreView(int idx, double mag, int magIdx, double xoffset, do
                   return;
                   }
             QSplitter* vs = new QSplitter;
-            vs->addWidget(v);
+            QScrollArea* vScroll = new QScrollArea;
+            vs->addWidget(vScroll);
+            vScroll->setWidget(v);
             stack->addWidget(vs);
             }
       v->setMag(magIdx, mag);
