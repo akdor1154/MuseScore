@@ -1157,6 +1157,8 @@ void ScoreView::resizeEvent(QResizeEvent* /*ev*/)
             setMag(m);
             }
       update();
+      QSize testSize = size();
+      setMinimumSize(testSize);
       }
 
 //---------------------------------------------------------
