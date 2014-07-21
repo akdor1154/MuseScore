@@ -60,7 +60,7 @@ set(CPACK_DEBIAN_PACKAGE_NAME         "mscore")
 set(CPACK_DEBIAN_PACKAGE_VERSION      "${MUSESCORE_VERSION_FULL}-0ubuntu0.1")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS    "libqt4-core (>= 4.4), libqt4-gui (>= 4.4)")
+#set(CPACK_DEBIAN_PACKAGE_DEPENDS    "libqt4-core (>= 4.4), libqt4-gui (>= 4.4)")
 
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER   "tsmithe@ubuntu.com")
 set(CPACK_DEBIAN_PACKAGE_SECTION      "devel")
