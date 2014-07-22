@@ -86,13 +86,15 @@ if (SCRIPT_INTERFACE)
    set_target_properties (
       libmscore
       PROPERTIES
-         COMPILE_FLAGS "-g ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch"
+         COMPILE_FLAGS "-flto -O3 ${PCH_INCLUDE} -Wall -Wextra -Winvalid-pch"
+	 LINK_FLAGS "-flto -O3"
       )
 else (SCRIPT_INTERFACE)
    set_target_properties (
       libmscore
       PROPERTIES
-         COMPILE_FLAGS "-g ${PCH_INCLUDE} -include libmscore/noscript.h -Wall -Wextra -Winvalid-pch"
+         COMPILE_FLAGS "-flto -O3 ${PCH_INCLUDE} -include libmscore/noscript.h -Wall -Wextra -Winvalid-pch"
+	 LINK_FLATS "-flto -O3"
       )
 endif (SCRIPT_INTERFACE)
 
