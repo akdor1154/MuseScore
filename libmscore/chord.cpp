@@ -252,12 +252,9 @@ Chord::Chord(const Chord& c, bool link)
             if (link)
                   a->linkTo(c._arpeggio);
             }
-      if (c._tremolo
-          && (!c._tremolo->twoNotes() || c._tremolo->chord1() == &c)) {
+      if (c._tremolo && !c._tremolo->twoNotes()) {
             Tremolo* t = new Tremolo(*(c._tremolo));
-            t->setChords(this,0);
-            //add(t);
-            _tremolo = t;
+            add(t);
             if (link)
                   t->linkTo(c._tremolo);
             }
@@ -952,14 +949,12 @@ void Chord::write(Xml& xml) const
                   continue;
 
             if (s->startElement() == this) {
-                  if (s->id() == -1)
-                        s->setId(++xml.spannerId);
-                  xml.tagE(QString("Slur type=\"start\" id=\"%1\"").arg(s->id()));
+                  int id = xml.spannerId(s);
+                  xml.tagE(QString("Slur type=\"start\" id=\"%1\"").arg(id));
                   }
             else if (s->endElement() == this) {
-                  if (s->id() == -1)
-                        s->setId(++xml.spannerId);
-                  xml.tagE(QString("Slur type=\"stop\" id=\"%1\"").arg(s->id()));
+                  int id = xml.spannerId(s);
+                  xml.tagE(QString("Slur type=\"stop\" id=\"%1\"").arg(id));
                   }
             }
       xml.etag();

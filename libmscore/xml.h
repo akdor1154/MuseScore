@@ -43,13 +43,14 @@ class XmlReader : public XmlStreamReader {
       QString docName;  // used for error reporting
 
       // Score read context (for read optimizations):
-      int _tick = 0;
+      int _tick  = 0;
+      int _tickOffset = 0;
       int _track = 0;
       Measure* _lastMeasure = 0;
       QList<Beam*>    _beams;
       QList<Tuplet*>  _tuplets;
       QList<SpannerValues> _spannerValues;
-      QList<Spanner*> _spanner;
+      QList<std::pair<int,Spanner*>> _spanner;
       QList<StaffType> _staffTypes;
       void htmlToString(int level, QString*);
       Interval _transpose;
@@ -86,11 +87,12 @@ class XmlReader : public XmlStreamReader {
       void setDocName(const QString& s) { docName = s; }
       QString getDocName() const        { return docName; }
 
-      int tick()  const           { return _tick;  }
-      int& rtick()                { return _tick;  }
-      void setTick(int val)       { _tick = val; }
-      int track() const           { return _track; }
-      void setTrack(int val)      { _track = val; }
+      int tick()  const           { return _tick + _tickOffset;  }
+      void initTick(int val)      { _tick = val;       }
+      void incTick(int val)       { _tick += val;      }
+      void setTickOffset(int val) { _tickOffset = val; }
+      int track() const           { return _track;     }
+      void setTrack(int val)      { _track = val;      }
       void addTuplet(Tuplet* s);
       void addBeam(Beam* s)       { _beams.append(s); }
 
@@ -103,9 +105,10 @@ class XmlReader : public XmlStreamReader {
       QList<Tuplet*>& tuplets()                      { return _tuplets; }
       QList<Beam*>& beams()                          { return _beams; }
 
-      void removeSpanner(Spanner*);
-      void addSpanner(Spanner*);
+      void removeSpanner(const Spanner*);
+      void addSpanner(int id, Spanner*);
       Spanner* findSpanner(int id);
+      int spannerId(const Spanner*);      // returns spanner id, allocates new one if none exists
 
       void addSpannerValues(const SpannerValues& sv) { _spannerValues.append(sv); }
       const SpannerValues* spannerValues(int id);
@@ -117,6 +120,7 @@ class XmlReader : public XmlStreamReader {
 
 //---------------------------------------------------------
 //   Xml
+//    xml writer
 //---------------------------------------------------------
 
 class Xml : public QTextStream {
@@ -124,7 +128,8 @@ class Xml : public QTextStream {
 
       QList<QString> stack;
       void putLevel();
-      QList<Spanner*> _spanner;
+      QList<std::pair<int,const Spanner*>> _spanner;
+      int _spannerId = 1;
 
    public:
       int curTick   =  0;           // used to optimize output
@@ -138,9 +143,10 @@ class Xml : public QTextStream {
 
       int tupletId  = 1;
       int beamId    = 1;
-      int spannerId = 1;
-      QList<Spanner*>& spanner() { return _spanner; }
-      void addSpanner(Spanner* s) { _spanner.append(s); }
+
+      int addSpanner(const Spanner*);     // returns allocated id
+      const Spanner* findSpanner(int id);
+      int spannerId(const Spanner*);      // returns spanner id, allocates new one if none exists
 
       Xml(QIODevice* dev);
       Xml();

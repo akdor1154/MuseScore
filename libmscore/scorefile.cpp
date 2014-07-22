@@ -88,7 +88,6 @@ static void writeMeasure(Xml& xml, MeasureBase* m, int staffIdx, bool writeSyste
 
 void Score::write(Xml& xml, bool selectionOnly)
       {
-      clearSpannerIds();
       xml.stag("Score");
 
 #ifdef OMR
@@ -207,7 +206,7 @@ void Score::write(Xml& xml, bool selectionOnly)
 void Score::readStaff(XmlReader& e)
       {
       int staff = e.intAttribute("id", 1) - 1;
-      e.setTick(0);
+      e.initTick(0);
       e.setTrack(staff * VOICES);
 
       if (staff == 0) {
@@ -236,7 +235,7 @@ void Score::readStaff(XmlReader& e)
                         if (!measure->isMMRest()) {
                               measures()->add(measure);
                               e.setLastMeasure(measure);
-                              e.setTick(measure->tick() + measure->ticks());
+                              e.initTick(measure->tick() + measure->ticks());
                               }
                         }
                   else if (tag == "HBox" || tag == "VBox" || tag == "TBox" || tag == "FBox") {
@@ -246,7 +245,7 @@ void Score::readStaff(XmlReader& e)
                         measures()->add(mb);
                         }
                   else if (tag == "tick")
-                        e.setTick(e.readInt());
+                        e.initTick(e.readInt());
                   else
                         e.unknown();
                   }
@@ -263,7 +262,7 @@ void Score::readStaff(XmlReader& e)
                               measure->setTick(e.tick());
                               measures()->add(measure);
                               }
-                        e.setTick(measure->tick());
+                        e.initTick(measure->tick());
                         measure->read(e, staff);
                         if (measure->isMMRest())
                               measure = e.lastMeasure()->nextMeasure();
@@ -276,7 +275,7 @@ void Score::readStaff(XmlReader& e)
                               }
                         }
                   else if (tag == "tick")
-                        e.setTick(e.readInt());
+                        e.initTick(e.readInt());
                   else
                         e.unknown();
                   }
@@ -1291,8 +1290,6 @@ void Score::writeSegments(Xml& xml, int strack, int etrack,
                                                 xml.curTick = segment->tick();
                                                 needTick = false;
                                                 }
-                                          if (s->id() == -1)
-                                                s->setId(++xml.spannerId);
                                           s->write(xml);
                                           }
                                     }
@@ -1306,9 +1303,7 @@ void Score::writeSegments(Xml& xml, int strack, int etrack,
                                           xml.curTick = segment->tick();
                                           needTick = false;
                                           }
-                                    if (s->id() == -1)
-                                          s->setId(++xml.spannerId);
-                                    xml.tagE(QString("endSpanner id=\"%1\"").arg(s->id()));
+                                    xml.tagE(QString("endSpanner id=\"%1\"").arg(xml.spannerId(s)));
                                     }
                               }
                         }
@@ -1409,14 +1404,5 @@ Tuplet* Score::searchTuplet(XmlReader& /*e*/, int /*id*/)
       return 0;
       }
 
-//---------------------------------------------------------
-//   clearSpannerIds
-//---------------------------------------------------------
-
-void Score::clearSpannerIds()
-      {
-      for (auto i : _spanner.map())
-            i.second->setId(-1);
-      }
 }
 

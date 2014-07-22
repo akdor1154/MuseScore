@@ -1362,7 +1362,7 @@ void Score::doLayout()
             // 1.3 scores can have ties in this list
             if (sp->type() != Element::Type::TIE) {
                   if (sp->tick() == -1) {
-                        qDebug("bad spanner id %d %s %d - %d", sp->id(), sp->name(), sp->tick(), sp->tick2());
+                        qDebug("bad spanner %s %d - %d", sp->name(), sp->tick(), sp->tick2());
                         }
                   else
                         sp->layout();
@@ -1390,7 +1390,7 @@ void Score::doLayout()
             }
 
       _layoutAll = false;
-            
+
       // _mscVersion is used during read and first layout
       // but then it's used for drag and drop and should be set to new version
       if (_mscVersion <= 114)
@@ -2365,10 +2365,6 @@ void Score::connectTies()
                               else {
                                     nc->setTremolo(tremolo);
                                     tremolo->setChords(c, nc);
-                                    // remove 2 note tremolos
-                                    // which have chords in two different measures
-                                    if(c->measure() != nc->measure())
-                                          c->remove(tremolo);
                                     }
                               break;
                               }
