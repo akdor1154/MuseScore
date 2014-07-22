@@ -1246,9 +1246,16 @@ void Score::layoutStage3()
 //    - systems are akkumulated into pages
 //   already existent systems and pages are reused
 //---------------------------------------------------------
-
+#include <QElapsedTimer>
 void Score::doLayout()
       {
+      static uint nLayoutTimers = 0;
+      static qint64 worstLayoutTime = std::numeric_limits<qint64>::max();
+      static qint64 bestLayoutTime = 0;
+      static qreal meanLayoutTime = 0;
+      qint64 layoutTime = 0;
+      QElapsedTimer layoutTimer;
+      layoutTimer.start();
       _scoreFont = ScoreFont::fontFactory(_style.value(StyleIdx::MusicalSymbolFont).toString());
       _noteHeadWidth = _scoreFont->width(SymId::noteheadBlack, spatium() / (MScore::DPI * SPATIUM20));
 
@@ -1395,6 +1402,22 @@ void Score::doLayout()
       // but then it's used for drag and drop and should be set to new version
       if (_mscVersion <= 114)
             _mscVersion = MSCVERSION;     // for later drag & drop usage
+
+      layoutTime = layoutTimer.elapsed();
+      qDebug() << "did layout in" << layoutTime << "ms";
+      meanLayoutTime = (nLayoutTimers*meanLayoutTime + layoutTime)/(nLayoutTimers+1);
+      if (layoutTime < bestLayoutTime)
+            bestLayoutTime = layoutTime;
+      if (layoutTime > worstLayoutTime)
+            worstLayoutTime = layoutTime;
+      nLayoutTimers++;
+
+      if (nLayoutTimers % 200 == 0) {
+            qDebug() << "----";
+            qDebug() << "Best: " << bestLayoutTime <<", Mean: " << meanLayoutTime << ", Worst: " << worstLayoutTime;
+            qDebug() << "----";
+      }
+
       }
 
 //---------------------------------------------------------
