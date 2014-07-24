@@ -203,6 +203,52 @@ Score* createExcerpt(const QList<Part*>& parts)
       }
 
 //---------------------------------------------------------
+//   cloneSpanner
+//---------------------------------------------------------
+
+static void cloneSpanner(Spanner* s, Score* score, int dstTrack, int dstTrack2)
+      {
+      Spanner* ns = static_cast<Spanner*>(s->linkedClone());
+      ns->setScore(score);
+      ns->setParent(0);
+      ns->setTrack(dstTrack);
+      ns->setTrack2(dstTrack2);
+      if (ns->type() == Element::Type::SLUR) {
+            //
+            // set start/end element for slur
+            //
+            ChordRest* cr1 = s->startCR();
+            ChordRest* cr2 = s->endCR();
+
+            ns->setStartElement(0);
+            ns->setEndElement(0);
+            for (Element* e : *cr1->links()) {
+                  ChordRest* cr = static_cast<ChordRest*>(e);
+                  if (cr == cr1)
+                        continue;
+                  if ((cr->score() == score) && (cr->tick() == ns->tick()) && cr->track() == dstTrack) {
+                        ns->setStartElement(cr);
+                        break;
+                        }
+                  }
+            for (Element* e : *cr2->links()) {
+                  ChordRest* cr = static_cast<ChordRest*>(e);
+                  if (cr == cr2)
+                        continue;
+                  if ((cr->score() == score) && (cr->tick() == ns->tick2()) && cr->track() == dstTrack2) {
+                        ns->setEndElement(cr);
+                        break;
+                        }
+                  }
+            if (!ns->startElement())
+                  qDebug("clone Slur: no start element");
+            if (!ns->endElement())
+                  qDebug("clone Slur: no end element");
+            }
+      score->addSpanner(ns);
+      }
+
+//---------------------------------------------------------
 //   cloneStaves
 //---------------------------------------------------------
 
@@ -327,7 +373,8 @@ void cloneStaves(Score* oscore, Score* score, const QList<int>& map)
                                                 Note* on = och->notes().at(i);
                                                 Note* nn = nch->notes().at(i);
                                                 if (on->tieFor()) {
-                                                      Tie* tie = new Tie(score);
+                                                      Tie* tie = static_cast<Tie*>(on->tieFor()->linkedClone());
+                                                      tie->setScore(score);
                                                       nn->setTieFor(tie);
                                                       tie->setStartNote(nn);
                                                       tie->setTrack(nn->track());
@@ -435,44 +482,8 @@ void cloneStaves(Score* oscore, Score* score, const QList<int>& map)
                   }
             if (dstTrack == -1)
                   continue;
-            Spanner* ns = static_cast<Spanner*>(s->linkedClone());
-            ns->setScore(score);
-            ns->setParent(0);
-            ns->setTrack(dstTrack);
-            ns->setTrack2(dstTrack2);
-            if (ns->type() == Element::Type::SLUR) {
-                  //
-                  // set start/end element for slur
-                  //
-                  ChordRest* cr1 = s->startCR();
-                  ChordRest* cr2 = s->endCR();
 
-                  ns->setStartElement(0);
-                  ns->setEndElement(0);
-                  for (Element* e : *cr1->links()) {
-                        ChordRest* cr = static_cast<ChordRest*>(e);
-                        if (cr == cr1)
-                              continue;
-                        if ((cr->score() == score) && (cr->tick() == ns->tick())) {
-                              ns->setStartElement(cr);
-                              break;
-                              }
-                        }
-                  for (Element* e : *cr2->links()) {
-                        ChordRest* cr = static_cast<ChordRest*>(e);
-                        if (cr == cr2)
-                              continue;
-                        if ((cr->score() == score) && (cr->tick() == ns->tick2())) {
-                              ns->setEndElement(cr);
-                              break;
-                              }
-                        }
-                  if (!ns->startElement())
-                        qDebug("clone Slur: no start element");
-                  if (!ns->endElement())
-                        qDebug("clone Slur: no end element");
-                  }
-            score->addSpanner(ns);
+            cloneSpanner(s, score, dstTrack, dstTrack2);
             }
       }
 
@@ -567,7 +578,8 @@ void cloneStaff(Staff* srcStaff, Staff* dstStaff)
                                           Note* on = och->notes().at(i);
                                           Note* nn = nch->notes().at(i);
                                           if (on->tieFor()) {
-                                                Tie* tie = new Tie(score);
+                                                Tie* tie = static_cast<Tie*>(on->tieFor()->linkedClone());
+                                                tie->setScore(score);
                                                 nn->setTieFor(tie);
                                                 tie->setStartNote(nn);
                                                 tie->setTrack(nn->track());
@@ -604,12 +616,7 @@ void cloneStaff(Staff* srcStaff, Staff* dstStaff)
                   }
             if (dstTrack == -1)
                   continue;
-            Spanner* ns = static_cast<Spanner*>(s->linkedClone());
-            ns->setScore(score);
-            ns->setParent(0);
-            ns->setTrack(dstTrack);
-            ns->setTrack2(dstTrack2);
-            score->addSpanner(ns);
+            cloneSpanner(s, score, dstTrack, dstTrack2);
             }
       }
 
@@ -699,7 +706,8 @@ void cloneStaff2(Staff* srcStaff, Staff* dstStaff, int stick, int etick)
                                           Note* on = och->notes().at(i);
                                           Note* nn = nch->notes().at(i);
                                           if (on->tieFor()) {
-                                                Tie* tie = new Tie(score);
+                                                Tie* tie = static_cast<Tie*>(on->tieFor()->linkedClone());
+                                                tie->setScore(score);
                                                 nn->setTieFor(tie);
                                                 tie->setStartNote(nn);
                                                 tie->setTrack(nn->track());
@@ -739,12 +747,7 @@ void cloneStaff2(Staff* srcStaff, Staff* dstStaff, int stick, int etick)
                   }
             if (dstTrack == -1)
                   continue;
-            Spanner* ns = static_cast<Spanner*>(s->linkedClone());
-            ns->setScore(score);
-            ns->setParent(0);
-            ns->setTrack(dstTrack);
-            ns->setTrack2(dstTrack2);
-            score->addSpanner(ns);
+            cloneSpanner(s, score, dstTrack, dstTrack2);
             }
       }
 

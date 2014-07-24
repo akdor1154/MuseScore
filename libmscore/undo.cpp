@@ -901,6 +901,24 @@ void Score::undoAddElement(Element* element)
             return;
             }
 
+      if (et == Element::Type::LAYOUT_BREAK) {
+            LayoutBreak* lb = static_cast<LayoutBreak*>(element);
+            if (lb->layoutBreakType() == LayoutBreak::Type::SECTION) {
+                  Measure* m = lb->measure();
+                  foreach(Score* s, scoreList()) {
+                        if (s == lb->score())
+                              undo(new AddElement(lb));
+                        else {
+                              Element* e = lb->linkedClone();
+                              Measure* nm = s->tick2measure(m->tick());
+                              e->setParent(nm);
+                              undo(new AddElement(e));
+                              }
+                        }
+                  return;
+                  }
+            }
+
       if (ostaff == 0 || (
          et    != Element::Type::ARTICULATION
          && et != Element::Type::CHORDLINE
@@ -2983,7 +3001,6 @@ void Score::undoChangeBarLine(Measure* m, BarLineType barType)
             Measure* measure = s->tick2measure(m->tick());
             Measure* nm      = m->nextMeasure();
             Repeat flags = measure->repeatFlags();
-            Repeat nflags = nm->repeatFlags();
             switch(barType) {
                   case BarLineType::END:
                   case BarLineType::NORMAL:
@@ -2993,7 +3010,7 @@ void Score::undoChangeBarLine(Measure* m, BarLineType barType)
                         {
                         s->undoChangeProperty(measure, P_ID::REPEAT_FLAGS, int(flags) & ~int(Repeat::END));
                         if (nm)
-                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nflags) & ~int(Repeat::START));
+                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nm->repeatFlags()) & ~int(Repeat::START));
                         s->undoChangeEndBarLineType(measure, barType);
                         measure->setEndBarLineGenerated (false);
                         }
@@ -3004,12 +3021,12 @@ void Score::undoChangeBarLine(Measure* m, BarLineType barType)
                   case BarLineType::END_REPEAT:
                         s->undoChangeProperty(measure, P_ID::REPEAT_FLAGS, int(flags | Repeat::END));
                         if (nm)
-                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nflags) & ~int(Repeat::START));
+                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nm->repeatFlags()) & ~int(Repeat::START));
                         break;
                   case BarLineType::END_START_REPEAT:
                         s->undoChangeProperty(measure, P_ID::REPEAT_FLAGS, int(flags | Repeat::END));
                         if (nm)
-                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nflags | Repeat::START));
+                              s->undoChangeProperty(nm, P_ID::REPEAT_FLAGS, int(nm->repeatFlags() | Repeat::START));
                         break;
                   }
             }
