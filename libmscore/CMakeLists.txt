@@ -94,7 +94,7 @@ else (SCRIPT_INTERFACE)
       libmscore
       PROPERTIES
          COMPILE_FLAGS "-flto -O3 ${PCH_INCLUDE} -include libmscore/noscript.h -Wall -Wextra -Winvalid-pch"
-	 LINK_FLATS "-flto -O3"
+	 LINK_FLAGS "-flto -O3"
       )
 endif (SCRIPT_INTERFACE)
 
