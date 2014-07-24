@@ -511,6 +511,7 @@ if (APPLE)
      install (FILES
       ../fonts/gonville/Gonville.otf
       ../fonts/mscore/mscore.ttf
+      ../fonts/mscore/MScoreText.ttf
       ../fonts/MuseJazz.ttf
       ../fonts/FreeSerif.ttf
       ../fonts/FreeSerifBold.ttf
@@ -518,6 +519,7 @@ if (APPLE)
       ../fonts/mscoreTab.ttf
       ../fonts/mscore-BC.ttf
       ../fonts/bravura/Bravura.otf
+      ../fonts/bravura/BravuraText.otf
      DESTINATION ${Mscore_SHARE_NAME}${Mscore_INSTALL_NAME}fonts
      )
      install(DIRECTORY

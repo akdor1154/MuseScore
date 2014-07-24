@@ -39,6 +39,47 @@ struct Dyn {
 
 #if 1
 
+// variant with ligatures, using bravura-text
+
+static Dyn dynList[] = {
+      // dynamic:
+      {  -1,  true,  "other-dynamics", ""                              },
+      {   1,  false, "pppppp", "\ue520\ue520\ue520\ue520\ue520\ue520" },
+      {   5,  false, "ppppp",  "\ue520\ue520\ue520\ue520\ue520"       },
+      {  10,  false, "pppp",   "\ue520\ue520\ue520\ue520"             },
+      {  16,  false, "ppp",    "\ue520\ue520\ue520"                   },
+      {  33,  false, "pp",     "\ue520\ue520"                         },
+      {  49,  false, "p",      "\ue520"                               },
+      {  64,  false, "mp",     "\ue521\ue520"                         },
+      {  80,  false, "mf",     "\ue521\ue522"                         },
+      {  96,  false, "f",      "\ue522"                               },
+      { 112,  false, "ff",     "\ue522"                                },
+      { 126,  false, "fff",    "\ue522\ue522\ue522"                    },
+      { 127,  false, "ffff",   "\ue522\ue522\ue522\ue522"              },
+      { 127,  false, "fffff",  "\ue522\ue522\ue522\ue522\ue522"        },
+      { 127,  false, "ffffff", "\ue522\ue522\ue522\ue522\ue522\ue522"  },
+
+      // accents:
+      {  0,   true,  "fp",     "\ue522\ue520"                          },
+      {  0,   true,  "sf",     "\ue524\ue522"                          },
+      {  0,   true,  "sfz",    "\ue524\ue522\0e525"                    },
+      {  0,   true,  "sff",    "\ue524\ue522\ue522"                    },
+      {  0,   true,  "sffz",   "\ue524\ue522\ue522\ue525"              },
+      {  0,   true,  "sfp",    "\ue524\ue522\ue520"                    },
+      {  0,   true,  "sfpp",   "\ue524\ue522\ue520\ue520"              },
+      {  0,   true,  "rfz",    "\ue523\ue522\ue525"                    },
+      {  0,   true,  "rf",     "\ue523\ue522"                          },
+      {  0,   true,  "fz",     "\ue522\ue525"                          },
+      {  0,   true,  "m",      "\ue521"                                },
+      {  0,   true,  "r",      "\ue523"                                },
+      {  0,   true,  "s",      "\ue524"                                },
+      {  0,   true,  "z",      "\ue525"                                },
+      {  0,   true,  "n",      "\ue526"                                },
+      };
+#endif
+
+#if 0
+
 // variant with ligatures, works for both emmentaler and bravura:
 
 static Dyn dynList[] = {
@@ -53,7 +94,8 @@ static Dyn dynList[] = {
       {  64,  false, "mp",     "<sym>dynamicMezzo</sym><sym>dynamicPiano</sym>" },
       {  80,  false, "mf",     "<sym>dynamicMezzo</sym><sym>dynamicForte</sym>" },
       {  96,  false, "f",      "<sym>dynamicForte</sym>" },
-      { 112,  false, "ff",     "<sym>dynamicForte</sym><sym>dynamicForte</sym>" },
+//      { 112,  false, "ff",     "<sym>dynamicForte</sym><sym>dynamicForte</sym>" },
+      { 112,  false, "ff",     "<font face=\"BravuraText\">\ue522\ue522</font>" },
       { 126,  false, "fff",    "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
       { 127,  false, "ffff",   "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
       { 127,  false, "fffff",  "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
@@ -76,10 +118,10 @@ static Dyn dynList[] = {
       {  0,   true,  "z",      "<sym>dynamicZ</sym>"},
       {  0,   true,  "n",      "<sym>dynamicNiente</sym>" }
       };
+#endif
 
+#if 0
 // variant with precomposed symbols, available only in bravura:
-
-#else
 static Dyn dynList[] = {
       // dynamic:
       {  -1,  true,  "other-dynamics", ""     },
