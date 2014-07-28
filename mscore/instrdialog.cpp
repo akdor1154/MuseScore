@@ -949,7 +949,7 @@ void MuseScore::editInstrList()
                         staff->setRstaff(rstaff);
 
                         staff->init(t, sli->staffType(), cidx);
-                        staff->setClef(0, sli->clef());
+                        staff->setInitialClef(sli->clef());
 
                         rootScore->undoInsertStaff(staff, staffIdx + rstaff);
                         Staff* linkedStaff = part->staves()->front();
@@ -965,31 +965,13 @@ void MuseScore::editInstrList()
                         }
                   if (linked.size() == 0)
                         part->staves()->front()->setBarLineSpan(part->nstaves());
-                  //equivalent to cmdInsertPart(part, staffIdx)
-                  // but we donnt add rests for linked parts
-                  rootScore->undoInsertPart(part, staffIdx);
-                  for (Staff* s : nonLinked) {
-                        int si = rootScore->staffIdx(s);
-                        for (Measure* m = rootScore->firstMeasure(); m; m = m->nextMeasure()) {
-                              m->cmdAddStaves(si, si + 1, true);
-                              if (m->hasMMRest())
-                                    //m->mmRest()->cmdAddStaves(si, si + 1, true);
-                                    m->mmRest()->cmdAddStaves(si, si + 1, false);
-                              }
-                        }
-                  for (Staff* s : linked) {
-                        int si = rootScore->staffIdx(s);
-                        for (Measure* m = rootScore->firstMeasure(); m; m = m->nextMeasure()) {
-                              m->cmdAddStaves(si, si + 1, false);
-                              if (m->hasMMRest())
-                                    m->mmRest()->cmdAddStaves(si, si + 1, true);
-                              }
-                        }
+
+                  rootScore->cmdInsertPart(part, staffIdx);
+
+                  //insert keysigs
                   int sidx = rootScore->staffIdx(part);
                   int eidx = sidx + part->nstaves();
-                  rootScore->adjustBracketsIns(sidx, eidx);
-                  //insert keysigs
-                  if(firstStaff)
+                  if (firstStaff)
                         rootScore->adjustKeySigs(sidx, eidx, tmpKeymap);
                   staffIdx += rstaff;
                   }
@@ -1029,7 +1011,7 @@ void MuseScore::editInstrList()
 
                               rootScore->adjustBracketsIns(staffIdx, staffIdx+1);
                               staff->initFromStaffType(sli->staffType());
-                              staff->setClef(0, sli->clef());
+                              staff->setInitialClef(sli->clef());
                               Key nKey = part->staff(0)->key(0);
                               staff->setKey(0, nKey);
 

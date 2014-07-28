@@ -969,8 +969,9 @@ class Score : public QObject {
       void layoutSpanner();
       void insertTime(int tickPos, int tickLen);
 
-      ScoreFont* scoreFont() const    { return _scoreFont; }
-      void setScoreFont(ScoreFont* f) { _scoreFont = f;    }
+      ScoreFont* scoreFont() const            { return _scoreFont;     }
+      void setScoreFont(ScoreFont* f)         { _scoreFont = f;        }
+
       qreal noteHeadWidth() const     { return _noteHeadWidth; }
       void setNoteHeadWidth( qreal n) { _noteHeadWidth = n; }
 
@@ -983,6 +984,8 @@ class Score : public QObject {
       Note* upAltCtrl(Note*) const;
       Element* downAlt(Element*);
       Note* downAltCtrl(Note*) const;
+
+      void cmdInsertClef(Clef* clef, ChordRest* cr);
 
       friend class ChangeSynthesizerState;
       friend class Chord;

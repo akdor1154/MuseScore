@@ -727,8 +727,7 @@ Element* ChordRest::drop(const DropData& data)
                   return e;
 
             case Element::Type::CLEF:
-                  score()->undoChangeClef(staff(), segment(), static_cast<Clef*>(e)->clefType());
-                  delete e;
+                  score()->cmdInsertClef(static_cast<Clef*>(e), this);
                   break;
 
             case Element::Type::TEMPO_TEXT:
@@ -742,6 +741,15 @@ Element* ChordRest::drop(const DropData& data)
                   return e;
 
             case Element::Type::DYNAMIC:
+                  {
+                  Dynamic* d = static_cast<Dynamic*>(e);
+                  d->setTrack(track());
+                  TextStyleType st = d->textStyleType();
+                  d->setTextStyleType(st);
+                  d->setParent(segment());
+                  score()->undoAddElement(d);
+                  }
+                  return e;
             case Element::Type::FRET_DIAGRAM:
             case Element::Type::SYMBOL:
                   e->setTrack(track());

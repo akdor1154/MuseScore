@@ -27,9 +27,9 @@ namespace Ms {
 static const int FALLBACK_FONT = 2;       // Bravura
 
 QVector<ScoreFont> ScoreFont::_scoreFonts = {
-      ScoreFont("Emmentaler", "MScore",      ":/fonts/mscore/",   "mscore.ttf",   "MScore Text" ),
-      ScoreFont("Gonville",   "Gonville",    ":/fonts/gonville/", "Gonville.otf", "Bravura Text" ),
-      ScoreFont("Bravura",    "Bravura",     ":/fonts/bravura/",  "Bravura.otf",  "Bravura Text" )
+      ScoreFont("Emmentaler", "MScore",      ":/fonts/mscore/",   "mscore.ttf"   ),
+      ScoreFont("Gonville",   "Gonville",    ":/fonts/gonville/", "Gonville.otf" ),
+      ScoreFont("Bravura",    "Bravura",     ":/fonts/bravura/",  "Bravura.otf"  )
       };
 
 //---------------------------------------------------------
@@ -5558,6 +5558,15 @@ ScoreFont* ScoreFont::fallbackFont()
       if (!f->loaded)
             f->load();
       return f;
+      }
+
+//---------------------------------------------------------
+//   fallbackTextFont
+//---------------------------------------------------------
+
+const char* ScoreFont::fallbackTextFont()
+      {
+      return "Bravura Text";
       }
 
 //---------------------------------------------------------

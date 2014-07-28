@@ -1876,7 +1876,7 @@ void ScoreView::paint(const QRect& r, QPainter& p)
             p.setBrush(Qt::NoBrush);
 
             QPen pen;
-            pen.setColor(Qt::blue);
+            pen.setColor(MScore::selectColor[0]);
             pen.setWidthF(2.0 / p.matrix().m11());
 
             pen.setStyle(Qt::SolidLine);
@@ -2340,7 +2340,7 @@ void ScoreView::setFocusRect()
             if (!focusFrame) {
                   focusFrame = new QFocusFrame;
                   QPalette p(focusFrame->palette());
-                  p.setColor(QPalette::WindowText, Qt::blue);
+                  p.setColor(QPalette::WindowText, MScore::selectColor[0]);
                   focusFrame->setPalette(p);
                   }
             focusFrame->setWidget(static_cast<QWidget*>(this));
@@ -4706,7 +4706,6 @@ void ScoreView::cmdAddPitch(int note, bool addFlag)
             qDebug("cannot enter notes here (no chord rest at current position)");
             return;
             }
-printf("cmdAddPitch %p\n", is.segment());
       Drumset* ds = is.drumset();
       int octave = 4;
       if (ds) {
@@ -4743,7 +4742,6 @@ printf("cmdAddPitch %p\n", is.segment());
             else {
                   int curPitch = -1;
                   if (is.segment()) {
-printf("   cmdAddPitch1 %p\n", is.segment());
                         Staff* staff = score()->staff(is.track() / VOICES);
                         Segment* seg = is.segment()->prev1(Segment::Type::ChordRest | Segment::Type::Clef);
                         while(seg) {
@@ -4778,16 +4776,13 @@ printf("   cmdAddPitch1 %p\n", is.segment());
                         --octave;
                   else if (delta < -6)
                         ++octave;
-printf("   cmdAddPitch2 %p\n", is.segment());
                   }
             }
 
       if (!noteEntryMode()) {
             sm->postEvent(new CommandEvent("note-input"));
             qApp->processEvents();
-printf("   cmdAddPitch3 %p\n", is.segment());
             }
-printf("   cmdAddPitch4 %p\n", is.segment());
       _score->cmdAddPitch(octave * 7 + note, addFlag);
       adjustCanvasPosition(is.cr(), false);
       }

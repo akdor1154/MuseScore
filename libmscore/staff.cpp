@@ -220,21 +220,57 @@ ClefType Staff::clef(int tick) const
       }
 
 //---------------------------------------------------------
-//   setClef
+//   setInitialClef
 //---------------------------------------------------------
 
-void Staff::setClef(int tick, const ClefTypeList& ctl)
+void Staff::setInitialClef(ClefType ct)
       {
-      clefs.setClef(tick, ctl);
+      clefs.setInitial(ClefTypeList(ct,ct));
+      }
+
+void Staff::setInitialClef(const ClefTypeList& ctl)
+      {
+      clefs.setInitial(ctl);
       }
 
 //---------------------------------------------------------
-//   undoSetClef
+//   setClef
 //---------------------------------------------------------
 
-void Staff::undoSetClef(int tick, const ClefTypeList& ctl)
+void Staff::setClef(Clef* clef)
       {
-      score()->undo(new SetClefType(this, tick, ctl));
+      int tick = clef->segment()->tick();
+      for (Segment* s = clef->segment()->next(); s && s->tick() == tick; s = s->next()) {
+            if (s->segmentType() == Segment::Type::Clef && s->element(clef->track())) {
+                  // adding this clef has no effect on the clefs list
+                  return;
+                  }
+            }
+      clefs.setClef(clef->segment()->tick(), clef->clefTypeList());
+      }
+
+//---------------------------------------------------------
+//   removeClef
+//---------------------------------------------------------
+
+void Staff::removeClef(Clef* clef)
+      {
+      int tick = clef->segment()->tick();
+
+      for (Segment* s = clef->segment()->next(); s && s->tick() == tick; s = s->next()) {
+            if (s->segmentType() == Segment::Type::Clef && s->element(clef->track())) {
+                  // removal of this clef has no effect on the clefs list
+                  return;
+                  }
+            }
+      clefs.erase(clef->segment()->tick());
+      for (Segment* s = clef->segment()->prev(); s && s->tick() == tick; s = s->prev()) {
+            if (s->segmentType() == Segment::Type::Clef && s->element(clef->track())) {
+                  // a previous clef at the same tick position gets valid
+                  clefs.setClef(tick, static_cast<Clef*>(s->element(clef->track()))->clefTypeList());
+                  break;
+                  }
+            }
       }
 
 //---------------------------------------------------------
@@ -708,16 +744,22 @@ void Staff::setStaffType(const StaffType* st)
       //    check for right clef-type and fix
       //    if necessary
       //
-      ClefType ct = clef(0);
+      ClefType ct    = clefs.initial()._concertClef;
       StaffGroup csg = ClefInfo::staffGroup(ct);
 
       if (_staffType.group() != csg) {
             switch(_staffType.group()) {
-                  case StaffGroup::TAB:        ct = ClefType(score()->styleI(StyleIdx::tabClef)); break;
-                  case StaffGroup::STANDARD:   ct = ClefType::G; break;      // TODO: use preferred clef for instrument
-                  case StaffGroup::PERCUSSION: ct = ClefType::PERC; break;
+                  case StaffGroup::TAB:
+                        ct = ClefType(score()->styleI(StyleIdx::tabClef));
+                        break;
+                  case StaffGroup::STANDARD:
+                        ct = ClefType::G;       // TODO: use preferred clef for instrument
+                        break;
+                  case StaffGroup::PERCUSSION:
+                        ct = ClefType::PERC;
+                        break;
                   }
-            clefs.setClef(0, ClefTypeList(ct, ct));
+            setInitialClef(ct);
             }
       }
 
@@ -730,11 +772,9 @@ void Staff::init(const InstrumentTemplate* t, const StaffType* staffType, int ci
       // set staff-type-independent parameters
       if (cidx > MAX_STAVES) {
             setSmall(false);
-            clefs.setClef(0, t->clefTypes[0]);
             }
       else {
             setSmall(t->smallStaff[cidx]);
-            clefs.setClef(0, t->clefTypes[cidx]);     // initial clef will be fixed to staff-type clef by setStaffType()
             setBracket(0, t->bracket[cidx]);
             setBracketSpan(0, t->bracketSpan[cidx]);
             setBarLineSpan(t->barlineSpan[cidx]);
@@ -870,26 +910,6 @@ QList<Staff*> Staff::staffList() const
             staffList.append(const_cast<Staff*>(this));
       return staffList;
       }
-
-//---------------------------------------------------------
-//   updateKeys
-//    the keys list can be reconstructed from actual keys
-//---------------------------------------------------------
-
-void Staff::updateKeys()
-      {
-      int track = idx() * VOICES;
-      _keys.clear();
-      for (Measure* m = score()->firstMeasure(); m; m = m->nextMeasure()) {
-            for (Segment* s = m->first(Segment::Type::KeySig); s; s = s->next(Segment::Type::KeySig)) {
-                  KeySig* ks = static_cast<KeySig*>(s->element(track));
-                  if (ks == 0 || ks->generated())
-                        continue;
-                  setKey(s->tick(), ks->key());
-                  }
-            }
-      }
-
 
 }
 

@@ -590,6 +590,7 @@ void Score::cmdAddTimeSig(Measure* fm, int staffIdx, TimeSig* ts, bool local)
                               nsig->setTrack(staffIdx * VOICES);
                               nsig->setParent(seg);
                               nsig->setSig(ts->sig(), ts->timeSigType());
+                              nsig->setGroups(ts->groups());
                               undoAddElement(nsig);
                               }
                         else {
@@ -1538,7 +1539,6 @@ void Score::deleteItem(Element* el)
             case Element::Type::CLEF:
                   {
                   Clef* clef = static_cast<Clef*>(el);
-                  int tick = clef->segment()->tick();
                   Measure* m = clef->measure();
                   if (m->isMMRest()) {
                         // propagate to original measure
@@ -1547,14 +1547,12 @@ void Score::deleteItem(Element* el)
                         if (s && s->element(clef->track())) {
                               Clef* c = static_cast<Clef*>(s->element(clef->track()));
                               undoRemoveElement(c);
-                              undo(new SetClefType(c->staff(), tick, c->staff()->clefTypeList(tick-1)));
                               }
                         }
                   else {
                         undoRemoveElement(clef);
-                        undo(new SetClefType(clef->staff(), tick, clef->staff()->clefTypeList(tick-1)));
                         }
-                  cmdUpdateNotes();
+                  // cmdUpdateNotes();
                   }
                   break;
 
@@ -2323,6 +2321,7 @@ MeasureBase* Score::insertMeasure(Element::Type type, MeasureBase* measure, bool
                   }
             }
       undoInsertTime(tick, ticks);
+      undo(new InsertTime(this, tick, ticks));
 
       if (omb && type == Element::Type::MEASURE && !createEmptyMeasures) {
             //

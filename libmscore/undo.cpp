@@ -496,20 +496,15 @@ void Score::undoChangeKeySig(Staff* ostaff, int tick, Key key)
 
 void Score::undoChangeClef(Staff* ostaff, Segment* seg, ClefType st)
       {
-      QList<Staff*> staffList;
-      LinkedStaves* linkedStaves = ostaff->linkedStaves();
-      if (linkedStaves)
-            staffList = linkedStaves->staves();
-      else
-            staffList.append(ostaff);
-
       bool firstSeg = seg->measure()->first() == seg;
 
-      foreach(Staff* staff, staffList) {
-            Score* score = staff->score();
+      Clef* gclef = 0;
+      foreach (Staff* staff, ostaff->staffList()) {
             if (staff->staffType()->group() != ClefInfo::staffGroup(st))
                   continue;
-            int tick = seg->tick();
+
+            Score* score = staff->score();
+            int tick     = seg->tick();
             Measure* measure = score->tick2measure(tick);
             if (!measure) {
                   qDebug("measure for tick %d not found!", tick);
@@ -527,25 +522,7 @@ void Score::undoChangeClef(Staff* ostaff, Segment* seg, ClefType st)
                   destSeg = measure->findSegment(Segment::Type::Clef, tick);
                   }
 
-            if (destSeg) {
-                  // if destSeg not a Clef seg...
-                  if (destSeg->segmentType() != Segment::Type::Clef) {
-                        // ...check prev seg is Clef seg: if yes, prev seg is our dest seg
-                        if (destSeg->prev() && destSeg->prev()->segmentType() == Segment::Type::Clef) {
-                              destSeg = destSeg->prev();
-                             }
-                        // if no Clef seg (current or previous), create a new Clef seg
-                        else {
-                              Segment* s = new Segment(measure, Segment::Type::Clef, seg->tick());
-                              s->setNext(destSeg);
-                              s->setPrev(destSeg->prev());
-                              score->undoAddElement(s);
-                              destSeg = s;
-                              }
-                        }
-                  }
-            // if no dest seg, create a new Clef seg
-            else {
+            if (!destSeg) {
                   destSeg = new Segment(measure, Segment::Type::Clef, seg->tick());
                   score->undoAddElement(destSeg);
                   }
@@ -579,13 +556,19 @@ void Score::undoChangeClef(Staff* ostaff, Segment* seg, ClefType st)
                   score->undo(new ChangeClefType(clef, cp, tp));
                   }
             else {
-                  clef = new Clef(score);
+                  if (gclef) {
+                        clef = static_cast<Clef*>(gclef->linkedClone());
+                        clef->setScore(score);
+                        }
+                  else {
+                        clef = new Clef(score);
+                        gclef = clef;
+                        }
                   clef->setTrack(track);
                   clef->setClefType(st);
                   clef->setParent(destSeg);
                   score->undo(new AddElement(clef));
                   }
-            undo(new SetClefType(clef->staff(), tick, clef->clefTypeList()));
             cmdUpdateNotes();
             }
       }
@@ -1192,20 +1175,16 @@ void Score::undoAddCR(ChordRest* cr, Measure* measure, int tick)
       {
       Q_ASSERT(cr->type() != Element::Type::CHORD || !(static_cast<Chord*>(cr)->notes()).isEmpty());
 
-      QList<Staff*> staffList;
       Staff* ostaff = cr->staff();
-      LinkedStaves* linkedStaves = ostaff->linkedStaves();
-      if (linkedStaves)
-            staffList = linkedStaves->staves();
-      else
-            staffList.append(ostaff);
       Segment::Type segmentType = Segment::Type::ChordRest;
 
       Tuplet* t = cr->tuplet();
-      foreach (Staff* staff, staffList) {
+      foreach (Staff* staff, ostaff->staffList()) {
             Score* score = staff->score();
             Measure* m   = (score == this) ? measure : score->tick2measure(tick);
             Segment* seg = m->undoGetSegment(segmentType, tick);
+
+            Q_ASSERT(seg->segmentType() == segmentType);
 
             ChordRest* newcr = (staff == ostaff) ? cr : static_cast<ChordRest*>(cr->linkedClone());
             newcr->setScore(score);
@@ -1396,8 +1375,8 @@ void AddElement::undo()
 
 void AddElement::redo()
       {
-//      qDebug("AddElement::redo: %s %p parent %s %p", element->name(), element,
-//         element->parent() ? element->parent()->name() : "nil", element->parent());
+//      qDebug("AddElement::redo: %s %p parent %s %p, score %p", element->name(), element,
+//         element->parent() ? element->parent()->name() : "nil", element->parent(), element->score());
 
       element->score()->addElement(element);
       endUndoRedo(false);
@@ -2453,7 +2432,7 @@ void ChangeStaffType::undo()
       staffType = st;
 
       // restore initial clef, both in the staff clef map...
-      staff->setClef(0, initialClef);
+      // staff->setClef(0, initialClef);
 
       // ...and in the score itself (code mostly copied from undoChangeClef() )
       // TODO : add a single function adding/setting a clef change in score?
@@ -2771,6 +2750,102 @@ void ChangeTimesig::flip()
       }
 
 //---------------------------------------------------------
+//   undoInsertTime
+//   acts on the linked scores as well
+//---------------------------------------------------------
+
+void Score::undoInsertTime(int tick, int len)
+      {
+      qDebug() << "insertTime" << len << "at tick" << tick;
+      if (len == 0)
+            return;
+
+      //
+      // we have to iterate on a map copy bc. the map is
+      // changed in the loop
+      //
+      std::multimap<int, Spanner*> spannerMap = _spanner.map();
+
+      for (auto i : spannerMap) {
+            Spanner* s = i.second;
+            if (s->tick2() < tick)
+                  continue;
+            if (len > 0) {
+                  if (tick > s->tick() && tick < s->tick2()) {
+                        //
+                        //  case a:
+                        //  +----spanner--------+
+                        //    +---add---
+                        //
+                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
+                        }
+                  else if (tick <= s->tick()) {
+                        //
+                        //  case b:
+                        //       +----spanner--------
+                        //  +---add---
+                        // and
+                        //            +----spanner--------
+                        //  +---add---+
+                        undoChangeProperty(s, P_ID::SPANNER_TICK, s->tick() + len);
+                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
+                        }
+                  }
+            else {
+                  int tick2 = tick - len;
+                  if (s->tick() >= tick2) {
+                        //
+                        //  case A:
+                        //  +----remove---+ +---spanner---+
+                        //
+                        int t = s->tick() + len;
+                        if (t < 0)
+                              t = 0;
+                        undoChangeProperty(s, P_ID::SPANNER_TICK, t);
+                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
+                        }
+                  else if ((s->tick() < tick) && (s->tick2() > tick2)) {
+                        //
+                        //  case B:
+                        //  +----spanner--------+
+                        //    +---remove---+
+                        //
+                        int t2 = s->tick2() + len;
+                        if (t2 > s->tick())
+                              undoChangeProperty(s, P_ID::SPANNER_TICK2, t2);
+                        }
+                  else if (s->tick() >= tick && s->tick2() < tick2) {
+                        //
+                        //  case C:
+                        //    +---spanner---+
+                        //  +----remove--------+
+                        //
+                        undoRemoveElement(s);
+                        }
+                  else if (s->tick() > tick && s->tick2() > tick2) {
+                        //
+                        //  case D:
+                        //       +----spanner--------+
+                        //  +---remove---+
+                        //
+                        int d1 = s->tick() - tick;
+                        int d2 = tick2 - s->tick();
+                        int len = s->tickLen() - d2;
+                        if (len == 0)
+                             undoRemoveElement(s);
+                        else {
+                              undoChangeProperty(s, P_ID::SPANNER_TICK, s->tick() - d1);
+                              undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() - (tick2-tick));
+                              }
+                        }
+                  }
+            }
+      // insert time in (key, clef) maps
+//      undo(new InsertTime(this, tick, len));
+      }
+
+
+//---------------------------------------------------------
 //   undoRemoveMeasures
 //---------------------------------------------------------
 
@@ -2805,12 +2880,7 @@ void Score::undoRemoveMeasures(Measure* m1, Measure* m2)
             }
       undo(new RemoveMeasures(m1, m2));
 
-      int ticks = 0;
-      for (Measure* m = m1; m; m = m->nextMeasure()) {
-            ticks += m->ticks();
-            if (m == m2)
-                  break;
-            }
+      int ticks = tick2 - tick1;
       undoInsertTime(m1->tick(), -ticks);
       }
 
@@ -2830,10 +2900,27 @@ RemoveMeasures::RemoveMeasures(Measure* m1, Measure* m2)
 
 void RemoveMeasures::undo()
       {
-      fm->score()->measures()->insert(fm, lm);
-      fm->score()->fixTicks();
-      fm->score()->connectTies();
-      fm->score()->setLayoutAll(true);
+      Score* score = fm->score();
+      QList<Clef*> clefs;
+      for (Segment* s = fm->first(); s != lm->last(); s = s->next1()) {
+            if (s->segmentType() != Segment::Type::Clef)
+                  continue;
+            for (int track = 0; track < score->ntracks(); track += VOICES) {
+                  Clef* c = static_cast<Clef*>(s->element(track));
+                  if (c == 0 || c->generated())
+                        continue;
+                  clefs.append(c);
+                  }
+            }
+      score->measures()->insert(fm, lm);
+      score->fixTicks();
+      score->insertTime(fm->tick(), lm->endTick() - fm->tick());
+      for (Clef* clef : clefs)
+            clef->staff()->setClef(clef);
+      if (!clefs.empty())
+            score->cmdUpdateNotes();
+      score->connectTies();
+      score->setLayoutAll(true);
       }
 
 //---------------------------------------------------------
@@ -2843,9 +2930,25 @@ void RemoveMeasures::undo()
 
 void RemoveMeasures::redo()
       {
-      fm->score()->measures()->remove(fm, lm);
-      fm->score()->fixTicks();
-      fm->score()->setLayoutAll(true);
+      Score* score = fm->score();
+      bool updateNotesNeeded = false;
+      for (Segment* s = fm->first(); s != lm->last(); s = s->next1()) {
+            if (s->segmentType() != Segment::Type::Clef)
+                  continue;
+            for (int track = 0; track < score->ntracks(); track += VOICES) {
+                  Clef* clef = static_cast<Clef*>(s->element(track));
+                  if (clef == 0 || clef->generated())
+                        continue;
+                  clef->staff()->removeClef(clef);
+                  updateNotesNeeded = true;
+                  }
+            }
+      score->measures()->remove(fm, lm);
+      score->fixTicks();
+      score->insertTime(fm->tick(), -(lm->endTick() - fm->tick()));
+      if (updateNotesNeeded)
+            score->cmdUpdateNotes();
+      score->setLayoutAll(true);
       }
 
 //---------------------------------------------------------
@@ -3147,8 +3250,9 @@ void ChangeClefType::flip()
 
       clef->setConcertClef(concertClef);
       clef->setTransposingClef(transposingClef);
-      clef->setClefType(clef->concertPitch() ? concertClef : transposingClef);
+//??      clef->setClefType(clef->concertPitch() ? concertClef : transposingClef);
 
+      clef->staff()->setClef(clef);
       Segment* segment = clef->segment();
       updateNoteLines(segment, clef->track());
       clef->score()->setLayoutAll(true);
@@ -3410,17 +3514,6 @@ void ChangeNoteEvent::flip()
 
       // TODO:
       note->chord()->setPlayEventType(PlayEventType::User);
-      }
-
-//---------------------------------------------------------
-//   SetClefType
-//---------------------------------------------------------
-
-void SetClefType::flip()
-      {
-      ClefTypeList ol = staff->clefTypeList(tick);
-      staff->setClef(tick, ctl);
-      ctl = ol;
       }
 
 //---------------------------------------------------------

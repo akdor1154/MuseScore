@@ -2068,36 +2068,6 @@ Score* Score::clone()
       Score* score = new Score(style());
       score->read1(r, true);
 
-#if 0
-      int staffIdx = 0;
-      foreach (Staff* st, score->staves()) {
-            if (st->updateKeymap())
-                  st->clearKeys();
-            int track = staffIdx * VOICES;
-            KeySig* key1 = 0;
-            for (Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
-                  for (Segment* s = m->first(); s; s = s->next()) {
-                        if (!s->element(track))
-                              continue;
-                        Element* e = s->element(track);
-                        if (e->generated())
-                              continue;
-                        if ((s->segmentType() == Segment::Type::KeySig) && st->updateKeymap()) {
-                              KeySig* ks = static_cast<KeySig*>(e);
-                              int naturals = key1 ? key1->keySigEvent().key() : 0;
-                              ks->setOldSig(naturals);
-                              st->setKey(s->tick(), ks->key());
-                              key1 = ks;
-                              }
-                        }
-                  if (m->sectionBreak())
-                        key1 = 0;
-                  }
-            st->setUpdateKeymap(false);
-            ++staffIdx;
-            }
-#endif
-
       score->updateNotes();
       score->addLayoutFlags(LayoutFlag::FIX_TICKS | LayoutFlag::FIX_PITCH_VELO);
       score->doLayout();
@@ -3449,102 +3419,6 @@ bool Score::isSpannerStartEnd(int tick, int track) const
       return false;
       }
 
-//---------------------------------------------------------
-//   undoInsertTime
-//   acts on the linked scores as well
-//---------------------------------------------------------
-
-void Score::undoInsertTime(int tick, int len)
-      {
-      qDebug() << "insertTime" << len << "at tick" << tick;
-      if (len == 0)
-            return;
-
-      //
-      // we have to iterate on a map copy bc. the map is
-      // changed in the loop
-      //
-      std::multimap<int, Spanner*> spannerMap = _spanner.map();
-
-      for (auto i : spannerMap) {
-            Spanner* s = i.second;
-            if (s->tick2() < tick)
-                  continue;
-            if (len > 0) {
-                  if (tick > s->tick() && tick < s->tick2()) {
-                        //
-                        //  case a:
-                        //  +----spanner--------+
-                        //    +---add---
-                        //
-                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
-                        }
-                  else if (tick <= s->tick()) {
-                        //
-                        //  case b:
-                        //       +----spanner--------
-                        //  +---add---
-                        // and
-                        //            +----spanner--------
-                        //  +---add---+
-                        undoChangeProperty(s, P_ID::SPANNER_TICK, s->tick() + len);
-                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
-                        }
-                  }
-            else {
-                  int tick2 = tick - len;
-                  if (s->tick() >= tick2) {
-                        //
-                        //  case A:
-                        //  +----remove---+ +---spanner---+
-                        //
-                        int t = s->tick() + len;
-                        if (t < 0)
-                              t = 0;
-                        undoChangeProperty(s, P_ID::SPANNER_TICK, t);
-                        undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() + len);
-                        }
-                  else if ((s->tick() < tick) && (s->tick2() > tick2)) {
-                        //
-                        //  case B:
-                        //  +----spanner--------+
-                        //    +---remove---+
-                        //
-                        int t2 = s->tick2() + len;
-                        if (t2 > s->tick())
-                              undoChangeProperty(s, P_ID::SPANNER_TICK2, t2);
-                        }
-                  else if (s->tick() >= tick && s->tick2() < tick2) {
-                        //
-                        //  case C:
-                        //    +---spanner---+
-                        //  +----remove--------+
-                        //
-                        undoRemoveElement(s);
-                        }
-                  else if (s->tick() > tick && s->tick2() > tick2) {
-                        //
-                        //  case D:
-                        //       +----spanner--------+
-                        //  +---remove---+
-                        //
-                        int d1 = s->tick() - tick;
-                        int d2 = tick2 - s->tick();
-                        int len = s->tickLen() - d2;
-                        if (len == 0)
-                             undoRemoveElement(s);
-                        else {
-                              undoChangeProperty(s, P_ID::SPANNER_TICK, s->tick() - d1);
-                              undoChangeProperty(s, P_ID::SPANNER_TICK2, s->tick2() - (tick2-tick));
-                              }
-                        }
-                  }
-            }
-      // insert time in (key, clef) maps
-      undo(new InsertTime(this, tick, len));
-      }
-
-
 void Score::insertTime(int tick, int len)
       {
       for (Score* score : scoreList()) {
@@ -3601,13 +3475,13 @@ QList<int> Score::uniqueStaves() const
 ChordRest* Score::findCR(int tick, int track) const
       {
       Measure* m = tick2measureMM(tick);
+      if (!m) {
+            qDebug("findCR: no measure for tick %d", tick);
+            return nullptr;
+            }
       // attach to first rest all spanner when mmRest
       if (m->isMMRest())
             tick = m->tick();
-      if (m == 0) {
-            qDebug("findCR: no measure for tick %d", tick);
-            return 0;
-            }
       Segment* s = m->first(Segment::Type::ChordRest);
       for (Segment* ns = s; ; ns = ns->next(Segment::Type::ChordRest)) {
             if (ns == 0 || ns->tick() > tick)
