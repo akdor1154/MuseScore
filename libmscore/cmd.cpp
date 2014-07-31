@@ -721,15 +721,27 @@ Fraction Score::makeGap(Segment* segment, int track, const Fraction& _sd, Tuplet
 //    - do not stop at measure end
 //---------------------------------------------------------
 
-bool Score::makeGap1(int tick, int staffIdx, Fraction len)
+bool Score::makeGap1(int tick, int staffIdx, Fraction len, int voices)
       {
-      ChordRest* cr = 0;
       Segment* seg = tick2segment(tick, true, Segment::Type::ChordRest);
       if (!seg) {
             qDebug("1:makeGap1: no segment at %d", tick);
             return false;
             }
-      int track = staffIdx * VOICES;
+      int strack = staffIdx * VOICES;
+      for (int track = strack; track < strack + 4; track++) {
+            if (!(voices & (1 << (track-strack))))
+                  continue;
+            bool result = makeGapVoice(seg, track, len, tick);
+            if(track == strack && !result)
+                  return false;
+            }
+      return true;
+      }
+
+bool Score::makeGapVoice(Segment* seg, int track, Fraction len, int tick)
+      {
+      ChordRest* cr = 0;
       cr = static_cast<ChordRest*>(seg->element(track));
       if (!cr) {
             // check if we are in the middle of a chord/rest
@@ -755,7 +767,6 @@ bool Score::makeGap1(int tick, int staffIdx, Fraction len)
                         return false;
                         }
                   if (seg1->element(track)) {
-                        tick = seg1->tick();
                         cr = static_cast<ChordRest*>(seg1->element(track));
                         break;
                         }
@@ -1670,13 +1681,12 @@ Element* Score::move(const QString& cmd)
 
       // no chord/rest found? look for another type of element
       if (cr == 0) {
-            Element* el  = 0;
-            Element* trg = 0;
-            // retrieve last element of section list
-            if (!selection().elements().isEmpty())
-                  el = selection().elements().last();
-            if (!el)                            // no element, no party!
+            if (selection().elements().isEmpty())
                   return 0;
+            // retrieve last element of section list
+            Element* el = selection().elements().last();
+            Element* trg = 0;
+
             // get parent of element and process accordingly:
             // trg is the element to select on "next-chord" cmd
             // cr is the ChordRest to move from on other cmd's
@@ -2053,10 +2063,6 @@ void Score::cmd(const QAction* a)
             addArticulation(ArticulationType::Marcato);
       else if (cmd == "add-trill")
             addArticulation(ArticulationType::Trill);
-      else if (cmd == "add-hairpin")
-            cmdAddHairpin(false);
-      else if (cmd == "add-hairpin-reverse")
-            cmdAddHairpin(true);
       else if (cmd == "add-8va")
             cmdAddOttava(Ottava::Type::OTTAVA_8VA);
       else if (cmd == "add-8vb")

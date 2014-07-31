@@ -32,6 +32,7 @@
 #include "playpanel.h"
 #include "libmscore/page.h"
 #include "mixer.h"
+#include "selectionwindow.h"
 #include "palette.h"
 #include "palettebox.h"
 #include "libmscore/part.h"
@@ -386,6 +387,7 @@ MuseScore::MuseScore()
       masterPalette         = 0;
       mixer                 = 0;
       synthControl          = 0;
+      selectionWindow       = 0;
       debugger              = 0;
       measureListEdit       = 0;
       symbolDialog          = 0;
@@ -883,6 +885,10 @@ MuseScore::MuseScore()
       menuView->addAction(a);
 
       a = getAction("synth-control");
+      a->setCheckable(true);
+      menuView->addAction(a);
+
+      a = getAction("toggle-selection-window");
       a->setCheckable(true);
       menuView->addAction(a);
 
@@ -1413,6 +1419,7 @@ static void usage()
         "   -e        enable experimental features\n"
         "   -c dir    override config/settings folder\n"
         "   -t        set testMode flag for all files\n"
+        "   -M file   specify MIDI import operations file\n"
         );
 
       exit(-1);
@@ -1518,6 +1525,8 @@ void MuseScore::setCurrentScoreView(ScoreView* view)
             playPanel->setScore(cs);
       if (synthControl)
             synthControl->setScore(cs);
+      if (selectionWindow)
+            selectionWindow->setScore(cs);
       if (mixer)
             mixer->updateAll(cs);
 #ifdef OMR
@@ -1603,12 +1612,12 @@ void MuseScore::midiPanelOnSwitchToFile(const QString &file)
       bool isMidiFile = ImportMidiPanel::isMidiFile(file);
       if (isMidiFile) {
             importmidiPanel->setMidiFile(file);
-            if (importmidiPanel->prefferedVisible())
+            if (importmidiPanel->isPreferredVisible())
                   importmidiPanel->setVisible(true);
             }
       else
             importmidiPanel->setVisible(false);
-      importmidiShowPanel->setVisible(!importmidiPanel->prefferedVisible() && isMidiFile);
+      importmidiShowPanel->setVisible(!importmidiPanel->isPreferredVisible() && isMidiFile);
       }
 
 void MuseScore::midiPanelOnCloseFile(const QString &file)
@@ -1620,24 +1629,23 @@ void MuseScore::midiPanelOnCloseFile(const QString &file)
 void MuseScore::allowShowMidiPanel(const QString &file)
       {
       if (ImportMidiPanel::isMidiFile(file))
-            importmidiPanel->setPrefferedVisible(true);
+            importmidiPanel->setPreferredVisible(true);
       }
 
-void MuseScore::setMidiPrefOperations(const QString &file)
+void MuseScore::setMidiReopenInProgress(const QString &file)
       {
       if (ImportMidiPanel::isMidiFile(file))
-            importmidiPanel->setMidiPrefOperations(file);
+            importmidiPanel->setReopenInProgress();
       }
 
 void MuseScore::showMidiImportPanel()
       {
-      importmidiPanel->setPrefferedVisible(true);
+      importmidiPanel->setPreferredVisible(true);
       QString fileName = cs ? cs->fileInfo()->filePath() : "";
       if (ImportMidiPanel::isMidiFile(fileName))
             importmidiPanel->setVisible(true);
       importmidiShowPanel->hide();
       }
-
 
 //---------------------------------------------------------
 //   dragEnterEvent
@@ -3748,7 +3756,12 @@ void MuseScore::selectElementDialog(Element* e)
       if (sd.exec()) {
             ElementPattern pattern;
             sd.setPattern(&pattern);
-            score->scanElements(&pattern, Score::collectMatch);
+
+            if (sd.isInSelection())
+                  score->scanElementsInRange(&pattern, Score::collectMatch);
+            else
+                  score->scanElements(&pattern, Score::collectMatch);
+
             if (sd.doReplace()) {
                   score->select(0, SelectType::SINGLE, 0);
                   foreach(Element* ee, pattern.el)
@@ -4089,6 +4102,8 @@ void MuseScore::cmd(QAction* a, const QString& cmd)
             showMixer(a->isChecked());
       else if (cmd == "synth-control")
             showSynthControl(a->isChecked());
+      else if (cmd == "toggle-selection-window")
+            showSelectionWindow(a->isChecked());
       else if (cmd == "show-keys")
             ;
       else if (cmd == "toggle-transport")
@@ -4633,6 +4648,13 @@ int main(int argc, char* av[])
                   case 't':
                         {
                         enableTestMode = true;
+                        }
+                        break;
+                  case 'M':
+                        {
+                        if (argv.size() - i < 2)
+                              usage();
+                        preferences.midiImportOperations.setOperationsFile(argv.takeAt(i + 1));
                         }
                         break;
                   default:

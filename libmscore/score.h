@@ -366,6 +366,7 @@ class Score : public QObject {
       bool _defaultsRead;            ///< defaults were read at MusicXML import, allow export of defaults in convertermode
 
       Selection _selection;
+      SelectionFilter _selectionFilter;
       QList<KeySig*> customKeysigs;
       Omr* _omr;
       Audio* _audio;
@@ -545,7 +546,8 @@ class Score : public QObject {
       void changeCRlen(ChordRest* cr, const TDuration&);
 
       Fraction makeGap(Segment*, int track, const Fraction&, Tuplet*, bool keepChord = false);
-      bool makeGap1(int tick, int staffIdx, Fraction len);
+      bool makeGap1(int tick, int staffIdx, Fraction len, int voices);
+      bool makeGapVoice(Segment* seg, int track, Fraction len, int tick);
 
       Rest* addRest(int tick, int track, TDuration, Tuplet*);
       Rest* addRest(Segment* seg, int track, TDuration d, Tuplet*);
@@ -641,6 +643,7 @@ class Score : public QObject {
       Element* getSelectedElement() const   { return _selection.element(); }
       const Selection& selection() const    { return _selection; }
       Selection& selection()                { return _selection; }
+      SelectionFilter& selectionFilter()     { return _selectionFilter; }
       void setSelection(const Selection& s);
 
       int pos();
