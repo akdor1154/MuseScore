@@ -1,6 +1,13 @@
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/revision.h
-	COMMAND ${CMAKE_COMMAND} execute_process
-		${GIT_EXECUTABLE} rev-parse HEAD --short
+include (FindGit)
+if (GIT_EXECUTABLE)
+      execute_process(
+            COMMAND "${GIT_EXECUTABLE}" rev-parse --short HEAD
+            OUTPUT_VARIABLE GIT_REVISION
+            )
+      endif (GIT_EXECUTABLE)
 
-add_custom_target(revision ALL
+if (NOT GIT_REVISION)
+      set(GIT_REVISION "Unknown")
+      endif(NOT GIT_REVISION)
+
+file(WRITE "${PROJECT_SOURCE_DIR}/mscore/revision.h" "${GIT_REVISION}")
